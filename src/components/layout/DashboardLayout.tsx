@@ -9,7 +9,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  ChevronRight
+  ChevronRight,
+  LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/logo/Logo';
@@ -26,7 +27,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NavItem {
   label: string;
-  icon: React.FC<{ size?: number }>;
+  icon: LucideIcon;
   path: string;
   adminOnly?: boolean;
 }
@@ -109,6 +110,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <nav className="px-2 space-y-1">
               {filteredNavItems.map((item) => {
                 const isActive = location.pathname === item.path;
+                const IconComponent = item.icon;
                 return (
                   <TooltipProvider key={item.path} delayDuration={300}>
                     <Tooltip>
@@ -122,7 +124,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                               : "text-gray-700 hover:bg-gray-50 hover:text-abtec-600"
                           )}
                         >
-                          <item.icon 
+                          <IconComponent 
                             size={20} 
                             className={cn(
                               "mr-3",
