@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckInRecord, formatDate, generateMockCheckIns, getCheckInTypeLabel, getCheckInTypeColor } from '@/utils/mockData';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle, Clock, LocateFixed, LogIn, LogOut, PanelRightClose, Users, Utensils } from 'lucide-react';
+import { CheckCircle, Clock, LocateFixed, LogIn, LogOut, MapPin, PanelRightClose, Users, Utensils } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type CheckInType = 'in' | 'out' | 'lunch_start' | 'lunch_end';
 
@@ -19,6 +20,18 @@ const CheckInSystem = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkInType, setCheckInType] = useState<CheckInType>('in');
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+    address: string;
+  }>({
+    latitude: null,
+    longitude: null,
+    address: 'Local não identificado'
+  });
+  const [manualLocation, setManualLocation] = useState('');
+  const [useManualLocation, setUseManualLocation] = useState(false);
 
   useEffect(() => {
     // Update current time every second
@@ -58,16 +71,95 @@ const CheckInSystem = () => {
     return () => clearInterval(timer);
   }, [user]);
 
+  const getGeolocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocalização não é suportada pelo seu navegador');
+      setUseManualLocation(true);
+      return Promise.reject('Geolocation not supported');
+    }
+
+    setLocationLoading(true);
+
+    return new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve(position);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              toast.error('Permissão para geolocalização negada');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              toast.error('Localização indisponível');
+              break;
+            case error.TIMEOUT:
+              toast.error('Tempo esgotado para obter localização');
+              break;
+            default:
+              toast.error('Erro ao obter localização');
+          }
+          setUseManualLocation(true);
+          reject(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }).finally(() => setLocationLoading(false));
+  };
+
+  const getAddressFromCoordinates = async (latitude: number, longitude: number) => {
+    try {
+      // In a real app, you would use a geocoding service like Google Maps API
+      // For this demo, we'll simulate a resolved address
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (Aproximado)`;
+    } catch (error) {
+      console.error('Error getting address:', error);
+      return 'Endereço não encontrado';
+    }
+  };
+
+  const updateLocation = async () => {
+    try {
+      const position = await getGeolocation();
+      const { latitude, longitude } = position.coords;
+      const address = await getAddressFromCoordinates(latitude, longitude);
+      
+      setCurrentLocation({
+        latitude,
+        longitude,
+        address
+      });
+      
+      return { latitude, longitude, address };
+    } catch (error) {
+      console.error('Failed to get location:', error);
+      return null;
+    }
+  };
+
   const handleCheckIn = async () => {
     if (!user) return;
     
     setLoading(true);
     
     try {
+      // Get location before check-in
+      let locationData = null;
+      
+      if (!useManualLocation) {
+        locationData = await updateLocation();
+      }
+      
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const now = new Date();
+      const locationString = useManualLocation 
+        ? manualLocation || 'Local informado manualmente'
+        : locationData?.address || 'Local não identificado';
+        
       const newCheckIn: CheckInRecord = {
         id: `${user.id}-${now.toISOString()}`,
         userId: user.id,
@@ -75,7 +167,10 @@ const CheckInSystem = () => {
         userDepartment: user.department,
         type: checkInType,
         timestamp: now.toISOString(),
-        location: 'Escritório Principal',
+        location: locationString,
+        coordinates: !useManualLocation && locationData 
+          ? { lat: locationData.latitude, lng: locationData.longitude }
+          : undefined
       };
       
       // Add the new check-in to the list
@@ -101,7 +196,7 @@ const CheckInSystem = () => {
       };
       
       toast.success(messages[checkInType], {
-        description: `Horário: ${now.toLocaleTimeString('pt-BR')}`,
+        description: `Horário: ${now.toLocaleTimeString('pt-BR')} - Local: ${locationString.substring(0, 30)}${locationString.length > 30 ? '...' : ''}`,
       });
     } catch (error) {
       toast.error('Erro ao registrar ponto');
@@ -144,6 +239,19 @@ const CheckInSystem = () => {
       month: 'long',
       year: 'numeric'
     });
+  };
+
+  const handleDetectLocation = async () => {
+    setLocationLoading(true);
+    try {
+      await updateLocation();
+      setUseManualLocation(false);
+      toast.success('Localização detectada com sucesso!');
+    } catch (error) {
+      console.error('Failed to detect location:', error);
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   return (
@@ -198,11 +306,68 @@ const CheckInSystem = () => {
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-muted-foreground">
                   <LocateFixed className="h-4 w-4" />
-                  <span>{lastCheckIn.location}</span>
+                  <span className="line-clamp-1">{lastCheckIn.location}</span>
                 </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Nenhum registro hoje.</p>
+            )}
+          </div>
+
+          {/* Location Input Section */}
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Localização:</h3>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDetectLocation}
+                disabled={locationLoading}
+                className="flex items-center gap-1"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                {locationLoading ? 'Detectando...' : 'Detectar'}
+              </Button>
+            </div>
+            
+            {!useManualLocation ? (
+              <div className="text-sm space-y-2">
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span className="line-clamp-2">
+                    {currentLocation.address}
+                  </span>
+                </div>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setUseManualLocation(true)}
+                >
+                  Informar localização manualmente
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid w-full gap-1.5">
+                  <Label htmlFor="location" className="text-xs">Local</Label>
+                  <Input
+                    id="location"
+                    value={manualLocation}
+                    onChange={(e) => setManualLocation(e.target.value)}
+                    placeholder="Digite sua localização atual"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-xs"
+                  onClick={handleDetectLocation}
+                >
+                  Usar localização automática
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
@@ -210,7 +375,7 @@ const CheckInSystem = () => {
           <Button 
             className="w-full mt-4 bg-abtec-600 hover:bg-abtec-700"
             onClick={handleCheckIn} 
-            disabled={loading}
+            disabled={loading || (useManualLocation && !manualLocation)}
           >
             {loading ? (
               <>
@@ -272,7 +437,10 @@ const CheckInSystem = () => {
                           </div>
                         </div>
                         <div className="text-sm text-right">
-                          <div>{record.location}</div>
+                          <div className="flex items-center justify-end gap-1">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="line-clamp-1 max-w-[200px]">{record.location}</span>
+                          </div>
                           <div className="text-xs text-muted-foreground mt-1">
                             ID: {record.id.substring(0, 8)}...
                           </div>

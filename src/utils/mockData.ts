@@ -1,4 +1,3 @@
-
 import { User } from "@/contexts/AuthContext";
 
 // Mock users
@@ -51,10 +50,13 @@ export interface CheckInRecord {
   userId: string;
   userName: string;
   userDepartment: string;
-  type: "in" | "out" | "lunch_start" | "lunch_end";
+  type: 'in' | 'out' | 'lunch_start' | 'lunch_end';
   timestamp: string;
-  location?: string;
-  note?: string;
+  location: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 // Generate mock check-in data for the past week
