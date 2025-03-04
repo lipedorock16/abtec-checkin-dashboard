@@ -14,11 +14,19 @@ export interface User {
   courses?: string[];
 }
 
+export interface NewUserData {
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+  department: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  addUser: (userData: NewUserData) => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -28,8 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   useEffect(() => {
+    // Initialize users from mock data
+    setAllUsers(mockUsers);
+    
     // Check for saved user in localStorage (simulating persistence)
     const savedUser = localStorage.getItem('abtec_user');
     if (savedUser) {
@@ -43,6 +55,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  // Save users to localStorage whenever it changes
+  useEffect(() => {
+    if (allUsers.length > 0) {
+      localStorage.setItem('abtec_users', JSON.stringify(allUsers));
+    }
+  }, [allUsers]);
+
   const login = async (email: string, password: string) => {
     setLoading(true);
     
@@ -50,8 +69,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     try {
-      // Find user with matching email (in a real app, this would be a server request)
-      const foundUser = mockUsers.find(u => u.email === email);
+      // First check in the local state
+      let foundUser = allUsers.find(u => u.email === email);
+      
+      // If not found in local state, check in mock data (this is a fallback)
+      if (!foundUser) {
+        foundUser = mockUsers.find(u => u.email === email);
+      }
       
       if (foundUser && password === '123456') { // simplified for demo
         setUser(foundUser);
@@ -76,6 +100,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const generateAvatarUrl = (name: string) => {
+    return `https://ui-avatars.com/api/?name=${name.replace(' ', '+')}&background=0D8ABC&color=fff`;
+  };
+
+  const addUser = async (userData: NewUserData) => {
+    setLoading(true);
+    
+    try {
+      // Check if user with email already exists
+      const existingUser = allUsers.find(u => u.email === userData.email);
+      if (existingUser) {
+        throw new Error('Um usuário com este email já existe');
+      }
+      
+      // Generate a new user ID
+      const newId = (Math.max(...allUsers.map(u => parseInt(u.id)), 0) + 1).toString();
+      
+      // Create new user object
+      const newUser: User = {
+        id: newId,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        department: userData.department,
+        avatar: generateAvatarUrl(userData.name),
+        courses: []
+      };
+      
+      // Add to users array
+      const updatedUsers = [...allUsers, newUser];
+      setAllUsers(updatedUsers);
+      
+      // Save to localStorage (in a real app, this would be a server request)
+      localStorage.setItem('abtec_users', JSON.stringify(updatedUsers));
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      toast.error(error.message || 'Falha ao adicionar usuário');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('abtec_user');
@@ -89,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading, 
       login, 
       logout, 
+      addUser,
       isAdmin: user?.role === 'admin' 
     }}>
       {children}

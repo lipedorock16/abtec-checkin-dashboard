@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { users } from '@/utils/mockData';
 import { User } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,21 +19,45 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, UserPlus, Users, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import CourseManagement from './CourseManagement';
+import UserFormModal from './UserFormModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>(users);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Use stored users from localStorage if available
+  useEffect(() => {
+    const storedUsers = localStorage.getItem('abtec_users');
+    if (storedUsers) {
+      try {
+        const parsedUsers = JSON.parse(storedUsers);
+        setFilteredUsers(parsedUsers);
+      } catch (error) {
+        console.error('Failed to parse stored users', error);
+        setFilteredUsers(users); // Fallback to mock data
+      }
+    } else {
+      setFilteredUsers(users);
+    }
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
     
+    // Get the most up-to-date users list
+    const storedUsers = localStorage.getItem('abtec_users');
+    const currentUsers = storedUsers ? JSON.parse(storedUsers) : users;
+    
     if (!term) {
-      setFilteredUsers(users);
+      setFilteredUsers(currentUsers);
       return;
     }
     
-    const filtered = users.filter(user => 
+    const filtered = currentUsers.filter((user: User) => 
       user.name.toLowerCase().includes(term) || 
       user.email.toLowerCase().includes(term) ||
       user.department.toLowerCase().includes(term)
@@ -43,7 +67,22 @@ const AdminPanel = () => {
   };
 
   const handleAddUser = () => {
-    toast.info('Funcionalidade de adicionar usuário será implementada em breve.');
+    setIsAddUserModalOpen(true);
+  };
+
+  const closeAddUserModal = () => {
+    setIsAddUserModalOpen(false);
+    
+    // Refresh the user list after adding a new user
+    const storedUsers = localStorage.getItem('abtec_users');
+    if (storedUsers) {
+      try {
+        const parsedUsers = JSON.parse(storedUsers);
+        setFilteredUsers(parsedUsers);
+      } catch (error) {
+        console.error('Failed to parse stored users', error);
+      }
+    }
   };
 
   const getInitials = (name: string) => {
@@ -213,6 +252,12 @@ const AdminPanel = () => {
           <CourseManagement />
         </TabsContent>
       </Tabs>
+
+      {/* Modal para adicionar novo usuário */}
+      <UserFormModal 
+        isOpen={isAddUserModalOpen} 
+        onClose={closeAddUserModal} 
+      />
     </div>
   );
 };
