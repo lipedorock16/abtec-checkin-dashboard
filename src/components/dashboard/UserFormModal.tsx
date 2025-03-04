@@ -1,10 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ const userFormSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
   department: z.string().min(2, { message: 'Departamento é obrigatório' }),
   role: z.enum(['admin', 'user']),
+  password: z.string().min(6, { message: 'Senha deve ter pelo menos 6 caracteres' }),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -28,6 +29,7 @@ interface UserFormModalProps {
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose }) => {
   const { addUser } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -36,6 +38,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose }) => {
       email: '',
       department: '',
       role: 'user',
+      password: '',
     },
   });
 
@@ -48,6 +51,10 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose }) => {
     } catch (error: any) {
       toast.error(error.message || 'Erro ao adicionar usuário');
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -86,6 +93,37 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose }) => {
             {form.formState.errors.email && (
               <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
             )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha temporária</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...form.register('password')}
+                placeholder="Senha temporária"
+              />
+              <Button 
+                type="button"
+                variant="ghost" 
+                size="icon" 
+                onClick={togglePasswordVisibility}
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {form.formState.errors.password && (
+              <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Esta senha será usada no primeiro acesso do usuário
+            </p>
           </div>
           
           <div className="space-y-2">

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,6 +9,7 @@ export interface User {
   email: string;
   role: 'admin' | 'user';
   department: string;
+  password?: string;
   avatar?: string;
   courses?: string[];
 }
@@ -19,6 +19,7 @@ export interface NewUserData {
   email: string;
   role: 'admin' | 'user';
   department: string;
+  password: string;
 }
 
 interface AuthContextType {
@@ -39,10 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // Initialize users from mock data
     setAllUsers(mockUsers);
     
-    // Check for saved user in localStorage (simulating persistence)
     const savedUser = localStorage.getItem('abtec_user');
     if (savedUser) {
       try {
@@ -55,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Save users to localStorage whenever it changes
   useEffect(() => {
     if (allUsers.length > 0) {
       localStorage.setItem('abtec_users', JSON.stringify(allUsers));
@@ -65,25 +63,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     
-    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     try {
-      // First check in the local state
       let foundUser = allUsers.find(u => u.email === email);
       
-      // If not found in local state, check in mock data (this is a fallback)
       if (!foundUser) {
         foundUser = mockUsers.find(u => u.email === email);
       }
       
-      if (foundUser && password === '123456') { // simplified for demo
+      if (foundUser && (password === '123456' || password === foundUser.password)) {
         setUser(foundUser);
         localStorage.setItem('abtec_user', JSON.stringify(foundUser));
         
         toast.success(`Bem-vindo, ${foundUser.name}!`);
         
-        // Redirect based on role
         if (foundUser.role === 'admin') {
           navigate('/admin');
         } else {
@@ -108,31 +102,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     
     try {
-      // Check if user with email already exists
       const existingUser = allUsers.find(u => u.email === userData.email);
       if (existingUser) {
         throw new Error('Um usuário com este email já existe');
       }
       
-      // Generate a new user ID
       const newId = (Math.max(...allUsers.map(u => parseInt(u.id)), 0) + 1).toString();
       
-      // Create new user object
       const newUser: User = {
         id: newId,
         name: userData.name,
         email: userData.email,
         role: userData.role,
         department: userData.department,
+        password: userData.password,
         avatar: generateAvatarUrl(userData.name),
         courses: []
       };
       
-      // Add to users array
       const updatedUsers = [...allUsers, newUser];
       setAllUsers(updatedUsers);
       
-      // Save to localStorage (in a real app, this would be a server request)
       localStorage.setItem('abtec_users', JSON.stringify(updatedUsers));
       
       return Promise.resolve();
