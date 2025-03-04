@@ -1,7 +1,12 @@
 import { User } from "@/contexts/AuthContext";
 
-// Mock users
-export const users: User[] = [
+// Extended User type with teaching courses
+export interface ExtendedUser extends User {
+  courses?: string[];
+}
+
+// Mock users with courses
+export const users: ExtendedUser[] = [
   {
     id: "1",
     name: "Admin User",
@@ -16,6 +21,7 @@ export const users: User[] = [
     email: "john@abtec.com",
     role: "user",
     department: "Engineering",
+    courses: ["Matemática", "Física"],
     avatar: "https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff",
   },
   {
@@ -24,6 +30,7 @@ export const users: User[] = [
     email: "jane@abtec.com",
     role: "user",
     department: "Human Resources",
+    courses: ["Gestão de Pessoas", "Psicologia Organizacional"],
     avatar: "https://ui-avatars.com/api/?name=Jane+Smith&background=0D8ABC&color=fff",
   },
   {
@@ -32,6 +39,7 @@ export const users: User[] = [
     email: "michael@abtec.com",
     role: "user",
     department: "Marketing",
+    courses: ["Marketing Digital", "Design Gráfico"],
     avatar: "https://ui-avatars.com/api/?name=Michael+Johnson&background=0D8ABC&color=fff",
   },
   {
@@ -40,7 +48,173 @@ export const users: User[] = [
     email: "emily@abtec.com",
     role: "user",
     department: "Finance",
+    courses: ["Contabilidade", "Finanças Empresariais"],
     avatar: "https://ui-avatars.com/api/?name=Emily+Davis&background=0D8ABC&color=fff",
+  },
+];
+
+// Course data structure
+export interface Course {
+  id: string;
+  name: string;
+  department: string;
+  description: string;
+  credits: number;
+}
+
+// Mock courses
+export const courses: Course[] = [
+  {
+    id: "1",
+    name: "Matemática",
+    department: "Engineering",
+    description: "Curso básico de matemática aplicada",
+    credits: 4,
+  },
+  {
+    id: "2",
+    name: "Física",
+    department: "Engineering",
+    description: "Introdução aos conceitos de física",
+    credits: 4,
+  },
+  {
+    id: "3",
+    name: "Gestão de Pessoas",
+    department: "Human Resources",
+    description: "Fundamentos de gestão de recursos humanos",
+    credits: 3,
+  },
+  {
+    id: "4",
+    name: "Psicologia Organizacional",
+    department: "Human Resources",
+    description: "Aplicação da psicologia no ambiente de trabalho",
+    credits: 3,
+  },
+  {
+    id: "5",
+    name: "Marketing Digital",
+    department: "Marketing",
+    description: "Estratégias de marketing online",
+    credits: 3,
+  },
+  {
+    id: "6",
+    name: "Design Gráfico",
+    department: "Marketing",
+    description: "Princípios de design e comunicação visual",
+    credits: 3,
+  },
+  {
+    id: "7",
+    name: "Contabilidade",
+    department: "Finance",
+    description: "Fundamentos de contabilidade empresarial",
+    credits: 4,
+  },
+  {
+    id: "8",
+    name: "Finanças Empresariais",
+    department: "Finance",
+    description: "Gestão financeira para empresas",
+    credits: 4,
+  },
+];
+
+// Schedule data structure
+export interface TeachingSchedule {
+  id: string;
+  userId: string;
+  courseId: string;
+  courseName: string;
+  dayOfWeek: 'Segunda' | 'Terça' | 'Quarta' | 'Quinta' | 'Sexta';
+  startTime: string;
+  endTime: string;
+  location: string;
+}
+
+// Mock teaching schedules
+export const teachingSchedules: TeachingSchedule[] = [
+  {
+    id: "1",
+    userId: "2",
+    courseId: "1",
+    courseName: "Matemática",
+    dayOfWeek: "Segunda",
+    startTime: "08:00",
+    endTime: "10:00",
+    location: "Sala 101",
+  },
+  {
+    id: "2",
+    userId: "2",
+    courseId: "2",
+    courseName: "Física",
+    dayOfWeek: "Quarta",
+    startTime: "10:00",
+    endTime: "12:00",
+    location: "Laboratório 3",
+  },
+  {
+    id: "3",
+    userId: "3",
+    courseId: "3",
+    courseName: "Gestão de Pessoas",
+    dayOfWeek: "Terça",
+    startTime: "14:00",
+    endTime: "16:00",
+    location: "Sala 205",
+  },
+  {
+    id: "4",
+    userId: "3",
+    courseId: "4",
+    courseName: "Psicologia Organizacional",
+    dayOfWeek: "Quinta",
+    startTime: "16:00",
+    endTime: "18:00",
+    location: "Sala 207",
+  },
+  {
+    id: "5",
+    userId: "4",
+    courseId: "5",
+    courseName: "Marketing Digital",
+    dayOfWeek: "Segunda",
+    startTime: "14:00",
+    endTime: "16:00",
+    location: "Laboratório de Informática 2",
+  },
+  {
+    id: "6",
+    userId: "4",
+    courseId: "6",
+    courseName: "Design Gráfico",
+    dayOfWeek: "Quinta",
+    startTime: "08:00",
+    endTime: "10:00",
+    location: "Sala de Design",
+  },
+  {
+    id: "7",
+    userId: "5",
+    courseId: "7",
+    courseName: "Contabilidade",
+    dayOfWeek: "Terça",
+    startTime: "10:00",
+    endTime: "12:00",
+    location: "Sala 302",
+  },
+  {
+    id: "8",
+    userId: "5",
+    courseId: "8",
+    courseName: "Finanças Empresariais",
+    dayOfWeek: "Sexta",
+    startTime: "14:00",
+    endTime: "16:00",
+    location: "Sala 304",
   },
 ];
 
@@ -183,6 +357,33 @@ export const getCheckInTypeColor = (type: string): string => {
     case 'out': return 'text-blue-600 bg-blue-50';
     case 'lunch_start': return 'text-orange-600 bg-orange-50';
     case 'lunch_end': return 'text-purple-600 bg-purple-50';
+    default: return 'text-gray-600 bg-gray-50';
+  }
+};
+
+// Helper to get course by ID
+export const getCourseById = (id: string): Course | undefined => {
+  return courses.find(course => course.id === id);
+};
+
+// Helper to get user schedules
+export const getUserSchedules = (userId: string): TeachingSchedule[] => {
+  return teachingSchedules.filter(schedule => schedule.userId === userId);
+};
+
+// Helper to format time range
+export const formatTimeRange = (start: string, end: string): string => {
+  return `${start} - ${end}`;
+};
+
+// Get day of week color
+export const getDayOfWeekColor = (day: string): string => {
+  switch (day) {
+    case 'Segunda': return 'text-blue-600 bg-blue-50';
+    case 'Terça': return 'text-green-600 bg-green-50';
+    case 'Quarta': return 'text-purple-600 bg-purple-50';
+    case 'Quinta': return 'text-orange-600 bg-orange-50';
+    case 'Sexta': return 'text-pink-600 bg-pink-50';
     default: return 'text-gray-600 bg-gray-50';
   }
 };

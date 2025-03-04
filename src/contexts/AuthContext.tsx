@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { users as mockUsers } from '@/utils/mockData';
 
 export interface User {
   id: string;
@@ -10,6 +11,7 @@ export interface User {
   role: 'admin' | 'user';
   department: string;
   avatar?: string;
+  courses?: string[];
 }
 
 interface AuthContextType {
@@ -21,26 +23,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock users for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@abtec.com',
-    role: 'admin',
-    department: 'Management',
-    avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff'
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    email: 'john@abtec.com',
-    role: 'user',
-    department: 'Engineering',
-    avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff'
-  }
-];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

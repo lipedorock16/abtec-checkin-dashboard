@@ -6,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UsersList from '@/components/dashboard/UsersList';
-import { CalendarDays, Clock, LineChart, User } from 'lucide-react';
+import TeacherPanel from '@/components/dashboard/TeacherPanel';
+import { CalendarDays, Clock, LineChart, User, BookOpen } from 'lucide-react';
+import { getUserSchedules } from '@/utils/mockData';
 
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -39,6 +41,9 @@ const Dashboard = () => {
       year: 'numeric' 
     });
   };
+
+  // Get user schedules
+  const schedules = user ? getUserSchedules(user.id) : [];
 
   return (
     <DashboardLayout>
@@ -86,12 +91,27 @@ const Dashboard = () => {
           
           <Card className="animate-slide-up animation-delay-400">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Próximo Feriado</CardTitle>
-              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                {user.role === 'admin' ? 'Próximo Feriado' : 'Aulas Programadas'}
+              </CardTitle>
+              {user.role === 'admin' ? (
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+              )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">15/11</div>
-              <p className="text-xs text-muted-foreground mt-1">Proclamação da República</p>
+              {user.role === 'admin' ? (
+                <>
+                  <div className="text-2xl font-bold">15/11</div>
+                  <p className="text-xs text-muted-foreground mt-1">Proclamação da República</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{schedules.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Aulas nesta semana</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -99,6 +119,7 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" className="animate-scale-in animation-delay-300">
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            {!isAdmin && <TabsTrigger value="schedule">Meus Horários</TabsTrigger>}
             <TabsTrigger value="analytics" disabled>Análises</TabsTrigger>
             <TabsTrigger value="reports" disabled>Relatórios</TabsTrigger>
           </TabsList>
@@ -125,6 +146,12 @@ const Dashboard = () => {
 
             <UsersList />
           </TabsContent>
+          
+          {!isAdmin && (
+            <TabsContent value="schedule" className="mt-6">
+              <TeacherPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
